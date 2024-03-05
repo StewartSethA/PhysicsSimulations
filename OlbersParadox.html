@@ -93,7 +93,7 @@
 			y = sphere[1];
 			const attenuation = Math.exp(-absorption * distance);
 			const effectiveLuminance = luminance * attenuation;
-			const effectiveRadius = radius / distance; // Simplified; could adjust based on distance
+			const effectiveRadius = radius / distance; // Apparent radius is adjusted through perspective projection
 			ctx.beginPath();
 			ctx.arc(x, y, effectiveRadius, 0, 2 * Math.PI, false);
 			// Notice we are rendering using the alpha channel instead of obscuring light behind the star. For the sake of argument, assume all the light behind the star passes straight through it. (Gravitational lensing or something like that.) This is an upper bound on the total luminosity perceptible from the current star and all the stars behind it, even if stars did not block any light.
