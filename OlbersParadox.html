@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Olbers's Paradox Simulation</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+        canvas {
+            border: 1px solid black;
+        }
+    </style>
+</head>
+<body>
+    <div id="sliders">
+        <label for="density">Density p: <span id="densityVal">10000</span></label>
+        <input type="range" id="density" min="1" max="1000000" step="1" value="10000">
+        <label for="absorption">Absorption k: <span id="absorptionVal">0.001</span></label>
+        <input type="range" id="absorption" min="0.000" max="1" step="0.001" value="0.001">
+        <label for="luminance">Luminance I: <span id="luminanceVal">1</span></label>
+        <input type="range" id="luminance" min="0.0" max="1" step="0.01" value="1">
+        <label for="radius">Radius r: <span id="radiusVal">0.01</span></label>
+        <input type="range" id="radius" min="0" max="1" step="0.001" value="0.01">
+    </div>
+    <canvas id="canvas" width="800" height="600"></canvas>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const width = canvas.width;
+        const height = canvas.height;
+
+        // Parameters
+        let density = document.getElementById('density').value;
+        let absorption = document.getElementById('absorption').value;
+        let luminance = document.getElementById('luminance').value;
+        let radius = document.getElementById('radius').value;
+		let numStars = density;
+		let stars = [];
+		// The maximum distance at which to render any stars. Beyond this we will give Olbers's paradox an unfair advantage by simply rendering an infinitely dense field of stars all with perfect luminosity and without any gaps to see what happens.
+		let maxDistance=500;
+		reinitializeSpheres();
+
+        function updateValues() {
+            density = document.getElementById('density').value;
+            absorption = document.getElementById('absorption').value;
+            luminance = document.getElementById('luminance').value;
+            radius = document.getElementById('radius').value;
+            document.getElementById('densityVal').innerText = density;
+            document.getElementById('absorptionVal').innerText = absorption;
+            document.getElementById('luminanceVal').innerText = luminance;
+            document.getElementById('radiusVal').innerText = radius;
+            drawSpheres();
+        }
+		
+		function updateDensity() {
+			density = document.getElementById('density').value;
+			numStars = density;
+			reinitializeSpheres();
+			drawSpheres();
+		}
+
+        document.getElementById('density').addEventListener('input', updateDensity);
+        document.getElementById('absorption').addEventListener('input', updateValues);
+        document.getElementById('luminance').addEventListener('input', updateValues);
+        document.getElementById('radius').addEventListener('input', updateValues);
+
+        function compareFn(a,b){
+		  if (a[2]>b[2]) { return -1; }
+		  else if (a[2] < b[2]) { return 1; }
+		  return 0;
+		}
+
+        function reinitializeSpheres() {
+		  stars = [];
+		  for (let i = 0; i < numStars; i++) {
+			  const x = Math.random() * width;
+              const y = Math.random() * height;
+              const distance = Math.random() * maxDistance; // This is not an exact uniform density in 3D space, but it is uniform in 2 dimensions and separately in distance. This will actually bias the density sampling to have more stars close (and therefore increase the total apparent brightness).
+			  stars.push([x,y,distance])
+			}
+			// Sort stars by their distances so that closest ones are rendered last (z-ordering)
+			stars.sort(compareFn);
+		}
+
+        function drawSphere(sphere) {
+			distance = sphere[2];
+			x = sphere[0];
+			y = sphere[1];
+			const attenuation = Math.exp(-absorption * distance);
+			const effectiveLuminance = luminance * attenuation;
+			const effectiveRadius = radius / distance; // Simplified; could adjust based on distance
+			ctx.beginPath();
+			ctx.arc(x, y, effectiveRadius, 0, 2 * Math.PI, false);
+			// Notice we are rendering using the alpha channel instead of obscuring light behind the star. For the sake of argument, assume all the light behind the star passes straight through it. (Gravitational lensing or something like that.) This is an upper bound on the total luminosity perceptible from the current star and all the stars behind it, even if stars did not block any light.
+			ctx.fillStyle = `rgba(255, 255, 255, ${effectiveLuminance})`; // White spheres 
+			ctx.fill();
+		}
+
+        function drawSpheres() {
+		    ctx.fillStyle = "rgba(0, 0, 0, 255)";
+            ctx.fillRect(0, 0, width, height);
+			// Cheater's sheet because your CPU doesn't have infinite cycles per second: Simulate an infinite wall of stars (of equivalent luminosity as all others) just a little further away than all of the rendered stars. This is an UPPER BOUND on the total luminosity perceptible from all distant stars.
+			const attenuation = Math.exp(-absorption * maxDistance);
+            const effectiveLuminance = luminance * attenuation;
+			ctx.fillStyle = `rgba(255, 255, 255, ${effectiveLuminance})`;
+			ctx.fillRect(0, 0, width, height);
+			stars.forEach(drawSphere);
+        }
+
+        drawSpheres();
+    </script>
+</body>
+</html>
